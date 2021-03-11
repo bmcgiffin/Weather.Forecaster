@@ -13,57 +13,52 @@ namespace Weather.Forecaster
         static void Main(string[] args)
         {
             HttpClient client = new HttpClient();
-            Console.WriteLine("Calling the Open Weather API to retrive weather update...");
-            var responseTask1 = client.GetAsync("https://api.openweathermap.org/data/2.5/weather?q=omaha&appid=a6bf3dc24cf54af353aa915b839e088a&units=imperial");
-            var responseTask2 = client.GetAsync("https://api.openweathermap.org/data/2.5/weather?q=chicago&appid=a6bf3dc24cf54af353aa915b839e088a&units=imperial");
-            
-            responseTask1.Wait();
-            responseTask2.Wait();
+            Console.WriteLine("Welcome to the Weather Forecasting Information Kiosk!");
+            Console.WriteLine("Please enter the name of your city to check its weather!");
 
-            if (responseTask1.IsCompleted && responseTask2.IsCompleted)
+            bool done = false;
+
+            while (!done)
             {
-                var result1 = responseTask1.Result;
-                var result2 = responseTask2.Result;
+                string userCity = Console.ReadLine().ToUpper();
+                Console.WriteLine("Great! Sounds like you picked: " + userCity + "!");
 
-                if (result1.IsSuccessStatusCode && result2.IsSuccessStatusCode)
+                Console.WriteLine("Calling the Open Weather API to retrive weather update...");
+                var apiCall = "https://api.openweathermap.org/data/2.5/weather?q=" + userCity + "&appid=a6bf3dc24cf54af353aa915b839e088a&units=imperial";
+                var responseTask = client.GetAsync(apiCall);
+
+                responseTask.Wait();
+
+                if (responseTask.IsCompleted)
                 {
-                    var messageTask1 = result1.Content.ReadAsStringAsync();
-                    messageTask1.Wait();
+                    var result1 = responseTask.Result;
 
-                    var messageTask2 = result2.Content.ReadAsStringAsync();
-                    messageTask2.Wait();
+                    if (result1.IsSuccessStatusCode)
+                    {
+                        done = true;
+                        var messageTask = result1.Content.ReadAsStringAsync();
 
-                    JObject joResponse1 = JObject.Parse(messageTask1.Result);
-                    JObject joResponse2 = JObject.Parse(messageTask2.Result);
+                        messageTask.Wait();
 
-                    // To retrieve temperature information
-                    //var joWrite1 = (joResponse1["main"]["temp"]);              
-                    //var joWrite2 = (joResponse2["main"]["temp"]);
+                        JObject joResponse1 = JObject.Parse(messageTask.Result);
 
-                    var joWrite1 = (joResponse1["wind"]["speed"]);              
-                    var joWrite2 = (joResponse2["wind"]["speed"]);
+                        var joWrite1 = (joResponse1["main"]["temp"]);
+                        var joWrite2 = (joResponse1["wind"]["speed"]);
 
-                    Console.WriteLine("The wind speed in Omaha is: " + joWrite1);
-                    Console.WriteLine("The wind speed in Chicago is: " + joWrite2);
-
-                    // To use with the temperature information
-                    //Console.WriteLine("The current temperature in Omaha is " + joWrite1);
-                    //Console.WriteLine("The current temperature in Tokyo is " + joWrite2);
-                    
-                    // Compare Omaha to Tokyo
-
-                    //Console.WriteLine("Message from Open Weather API  : " + messageTask.Result);
-                    Console.ReadLine();
-
+                        Console.WriteLine("The current air temperature in " + userCity + " is: " + joWrite1 + "F" + " and the wind speed is " + joWrite2 + " mph.");
+                        
+                    }
+                    else
+                    {
+                        Console.WriteLine("Oops! You've entered an invalid city. Please enter a valid city name.");                        
+                    }
                 }
-
-                else
-
-                {
-                    Console.WriteLine("Unable to contact Open Weather API. Please contact your administrator...");
-                    Console.ReadLine();
-                }                                
             }
+
+            Console.ReadLine();
         }
+
+        
+
     }
 }
